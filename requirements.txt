@@ -14,6 +14,7 @@ httpx
 
 redis
 celery
+flower
 
 pypdf
 python-docx

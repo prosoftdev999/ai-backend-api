@@ -19,8 +19,19 @@ class Settings(BaseSettings):
 
     llm_api_key: str
     llm_base_url: str = "https://api.openai.com/v1"
-    llm_model: str
-    embedding_model: str
+    llm_model: str = "gpt-4.1-mini"
+    embedding_model: str = "text-embedding-3-small"
+
+    llm_timeout_seconds: float = Field(
+        default=60.0,
+        ge=5.0,
+        le=300.0,
+    )
+    llm_max_output_tokens: int = Field(
+        default=1000,
+        ge=50,
+        le=10_000,
+    )
 
     upload_directory: Path = Path("uploads")
     max_upload_size_mb: int = Field(default=20, ge=1, le=100)

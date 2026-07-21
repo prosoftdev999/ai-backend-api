@@ -2,30 +2,39 @@ services:
   db:
     image: pgvector/pgvector:pg17
     container_name: ai-backend-db
+    restart: unless-stopped
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ai_backend
+
     ports:
       - "5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ai_backend"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: ai-backend-redis
+    restart: unless-stopped
+
     ports:
       - "6379:6379"
+
     volumes:
       - redis_data:/data
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
 
@@ -33,18 +42,28 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: ai-backend-api
-    command: >
-      uvicorn app.main:app
-      --host 0.0.0.0
-      --port 8000
-      --reload
+    restart: unless-stopped
+
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+
     env_file:
       - .env
+
     ports:
       - "8000:8000"
+
     volumes:
       - .:/app
+
     depends_on:
       db:
         condition: service_healthy
@@ -55,17 +74,59 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: ai-backend-worker
-    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=info
+    restart: unless-stopped
+
+    command:
+      - celery
+      - -A
+      - app.tasks.celery_app:celery_app
+      - worker
+      - --loglevel=info
+
     env_file:
       - .env
+
     volumes:
       - .:/app
+
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: ai-backend-flower
+    restart: unless-stopped
+
+    command:
+      - celery
+      - -A
+      - app.tasks.celery_app:celery_app
+      - flower
+      - --address=0.0.0.0
+      - --port=5555
+
+    env_file:
+      - .env
+
+    ports:
+      - "5555:5555"
+
+    volumes:
+      - .:/app
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
 
 volumes:
   postgres_data:
