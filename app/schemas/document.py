@@ -19,13 +19,11 @@ class DocumentResponse(BaseModel):
     updated_at: datetime
 
 
-class DocumentChunkResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class DocumentListResponse(BaseModel):
+    items: list[DocumentResponse]
+    total: int
 
-    id: uuid.UUID
-    document_id: uuid.UUID
-    chunk_index: int
-    content: str
-    token_count: int | None
-    metadata_json: dict
-    created_at: datetime
+
+class DocumentTaskResponse(BaseModel):
+    document: DocumentResponse
+    task_id: str
